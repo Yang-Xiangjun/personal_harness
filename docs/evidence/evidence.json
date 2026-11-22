@@ -1,0 +1,59 @@
+{
+  "criteria": [
+    {
+      "evidence": {
+        "argv": [
+          "D:\\softwares\\Anaconda3\\python.exe",
+          "-I",
+          "tests/test_clock.py",
+          "ClockLabelTests.test_minutes_and_seconds"
+        ],
+        "elapsed_seconds": 0.125,
+        "exit_code": 0,
+        "kind": "command",
+        "name": "format-example",
+        "output_bytes": 103,
+        "output_sha256": "1a52ff93b2b7c8bc576900f70c9062f5baedb573cf55507ec33070c999cd9b12",
+        "timed_out": false
+      },
+      "expect": "65 seconds displays as 01:05.",
+      "id": "format",
+      "status": "pass"
+    },
+    {
+      "evidence": {
+        "argv": [
+          "D:\\softwares\\Anaconda3\\python.exe",
+          "-I",
+          "tests/test_clock.py",
+          "ClockLabelTests.test_boundaries"
+        ],
+        "elapsed_seconds": 0.11,
+        "exit_code": 0,
+        "kind": "command",
+        "name": "clock-boundaries",
+        "output_bytes": 103,
+        "output_sha256": "1a52ff93b2b7c8bc576900f70c9062f5baedb573cf55507ec33070c999cd9b12",
+        "timed_out": false
+      },
+      "expect": "0, 59, 60 and 3600 seconds retain total minutes and two-digit minimum widths.",
+      "id": "boundaries",
+      "status": "pass"
+    }
+  ],
+  "deliverables": [
+    {
+      "bytes": 196,
+      "path": "clock_label.py",
+      "sha256": "b6776158caf7809c5f39289d9c3e7a2f4d86a672ddf6cfe5a6911348cbc97432"
+    }
+  ],
+  "finished_at": "2026-11-22T05:06:36.775956+00:00",
+  "issues": [],
+  "run_id": "734ce52c-f16e-47a5-85a0-e78526382fd9",
+  "seal_sha256": "40d9c91a069e4cb5477dd84c6e5d42bc72d83f5c650a34671d1499155c4e48ce",
+  "started_at": "2026-11-22T05:06:36.523233+00:00",
+  "status": "pass",
+  "task": "clock-label",
+  "version": 1
+}

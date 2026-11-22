@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "default_mode": "standard",
+  "modes": {
+    "fast": {
+      "spec": false,
+      "plan": false,
+      "review": false
+    },
+    "standard": {
+      "spec": true,
+      "plan": true,
+      "review": true
+    },
+    "high": {
+      "spec": true,
+      "plan": true,
+      "review": true
+    }
+  },
+  "max_repair_attempts": 2,
+  "timeout_seconds": 60,
+  "protected_globs": [
+    "tests/*",
+    "*/tests/*",
+    "test/*",
+    "*/test/*",
+    "test_*.py",
+    "*/test_*.py",
+    "*_test.py",
+    "*.test.*",
+    "*.spec.*",
+    "conftest.py",
+    "*/conftest.py",
+    "pytest.ini",
+    "pyproject.toml",
+    "tox.ini",
+    "jest.config.*"
+  ],
+  "commands": {}
+}

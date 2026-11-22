@@ -1,0 +1,32 @@
+test_absent_deliverable_fails_even_when_command_passes (test_harness.ProjectTests.test_absent_deliverable_fails_even_when_command_passes) ... ok
+test_bad_contracts_cannot_pass_vacuously (test_harness.ProjectTests.test_bad_contracts_cannot_pass_vacuously) ... ok
+test_changed_added_and_deleted_tests_are_detected (test_harness.ProjectTests.test_changed_added_and_deleted_tests_are_detected) ... ok
+test_changed_criteria_and_policy_are_detected (test_harness.ProjectTests.test_changed_criteria_and_policy_are_detected) ... ok
+test_changed_protected_inputs_during_command_fail_closed (test_harness.ProjectTests.test_changed_protected_inputs_during_command_fail_closed) ... ok
+test_command_failure_timezone_and_no_default_output_disclosure (test_harness.ProjectTests.test_command_failure_timezone_and_no_default_output_disclosure) ... ok
+test_command_timeout (test_harness.ProjectTests.test_command_timeout) ... ok
+test_conflicts_are_checked_before_writes (test_harness.ProjectTests.test_conflicts_are_checked_before_writes) ... ok
+test_exclusive_lock_preserves_interrupted_state (test_harness.ProjectTests.test_exclusive_lock_preserves_interrupted_state) ... ok
+test_fresh_verification_replaces_a_previous_pass (test_harness.ProjectTests.test_fresh_verification_replaces_a_previous_pass) ... ok
+test_generated_hook_command_runs_from_nested_working_directory (test_harness.ProjectTests.test_generated_hook_command_runs_from_nested_working_directory) ... ok
+test_high_route_requires_negative_case_and_recovery (test_harness.ProjectTests.test_high_route_requires_negative_case_and_recovery) ... ok
+test_hook_protocol_scoping_retry_guard_and_invalid_state (test_harness.ProjectTests.test_hook_protocol_scoping_retry_guard_and_invalid_state) ... ok
+test_hook_unsupported_and_existing_config (test_harness.ProjectTests.test_hook_unsupported_and_existing_config) ... ok
+test_install_preserves_settings_and_is_idempotent (test_harness.ProjectTests.test_install_preserves_settings_and_is_idempotent) ... ok
+test_install_refuses_a_reparse_point_before_writing (test_harness.ProjectTests.test_install_refuses_a_reparse_point_before_writing) ... ok
+test_installed_entrypoint_is_independent_of_source_cwd (test_harness.ProjectTests.test_installed_entrypoint_is_independent_of_source_cwd) ... ok
+test_malformed_policy_invalidates_existing_report (test_harness.ProjectTests.test_malformed_policy_invalidates_existing_report) ... ok
+test_missing_policy_invalidates_existing_report (test_harness.ProjectTests.test_missing_policy_invalidates_existing_report) ... ok
+test_optional_user_skills_preserve_global_files (test_harness.ProjectTests.test_optional_user_skills_preserve_global_files) ... ok
+test_oversized_text_yields_a_failed_criterion (test_harness.ProjectTests.test_oversized_text_yields_a_failed_criterion) ... ok
+test_path_validation (test_harness.ProjectTests.test_path_validation) ... ok
+test_real_linked_directory_cannot_redirect_an_install (test_harness.ProjectTests.test_real_linked_directory_cannot_redirect_an_install) ... ok
+test_requires_a_seal_and_never_silently_reseals (test_harness.ProjectTests.test_requires_a_seal_and_never_silently_reseals) ... ok
+test_review_handoff_rejects_edits_before_recording (test_harness.ProjectTests.test_review_handoff_rejects_edits_before_recording) ... ok
+test_structural_coverage_and_actual_review_are_distinct (test_harness.ProjectTests.test_structural_coverage_and_actual_review_are_distinct) ... ok
+test_unknown_command_and_embedded_arguments_rejected (test_harness.ProjectTests.test_unknown_command_and_embedded_arguments_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 27 tests in 4.219s
+
+OK

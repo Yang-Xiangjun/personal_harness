@@ -1,0 +1,20 @@
+{
+  "project_skills": [
+    "completion-verification",
+    "continuous-improvement",
+    "plan-checker",
+    "requirements-clarification",
+    "task-execution",
+    "task-planning",
+    "task-router"
+  ],
+  "project_hooks": [
+    {
+      "event": "stop",
+      "source": "project",
+      "trust": "untrusted"
+    }
+  ],
+  "hook_errors": [],
+  "codex_version": "codex-cli 0.171.0"
+}

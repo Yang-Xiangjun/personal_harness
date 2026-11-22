@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "id": "clock-label",
+  "mode": "fast",
+  "objective": "Display nonnegative whole seconds as elapsed minutes and seconds.",
+  "deliverables": [
+    "clock_label.py"
+  ],
+  "criteria": [
+    {
+      "id": "format",
+      "expect": "65 seconds displays as 01:05.",
+      "check": {
+        "kind": "command",
+        "name": "format-example"
+      }
+    },
+    {
+      "id": "boundaries",
+      "expect": "0, 59, 60 and 3600 seconds retain total minutes and two-digit minimum widths.",
+      "check": {
+        "kind": "command",
+        "name": "clock-boundaries"
+      }
+    }
+  ]
+}
