@@ -7,7 +7,7 @@ import tempfile
 from .common import (Problem, artifact, digest, encoded, fingerprint, identifier, linked,
                      local, object_at, put, require, timestamp, words)
 
-IGNORED_DIRS = {".git", ".quality", ".agents", ".codex", "__pycache__", ".venv", "venv",
+IGNORED_DIRS = {".git", ".quality", ".agents", ".codex", ".claude", "__pycache__", ".venv", "venv",
                 "node_modules", ".tox", ".pytest_cache", ".mypy_cache", ".ruff_cache"}
 
 

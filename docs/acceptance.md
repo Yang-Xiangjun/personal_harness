@@ -1,5 +1,22 @@
 # MVP acceptance results
 
+## Claude Code compatibility
+
+On 2026-11-23 (Pacific), all 35 regression tests passed on Windows with Python 3.12.4. Native discovery found the seven project skills in Claude Code 2.1.280 and Codex CLI 0.171.0. Claude's local `/context` command listed the installed `CLAUDE.md`, its imported `.quality/CLAUDE.md` and the team's pre-existing `AGENTS.md`.
+
+Fresh installs for Codex, Claude and both clients ran the clock example. Each verifier returned exit 1 with two failing criteria before repair, then exit 0 with both passing. A separate test added the second client to a sealed task and verified it with the same seal and a new run ID.
+
+The generated Claude PowerShell hook command requested a continuation for a watched task with missing evidence and passed through the repeated Stop. This check supplied the event directly. An attempted end-to-end Claude Stop check with a local model fixture timed out before its first request reached the fixture. The native discovery and explicit verification checks completed independently.
+
+```sh
+python -m unittest discover -s tests -v
+python tests/claude_discovery.py
+python tests/native_discovery.py
+python examples/demo.py --client both --project ../quality-both-demo
+```
+
+## Initial Codex release
+
 Verified on Windows with Python 3.12.4 and Codex CLI 0.171.0 on 2026-11-21 (Pacific). The regression suite completed **27 tests in 4.219 seconds**, with zero failures or skips. [Full test output](evidence/regression.txt)
 
 | Criterion | Observed result |

@@ -1,4 +1,4 @@
-"""Run a red/green task in a NEW directory. --leave-broken prepares it for Codex."""
+"""Run a red/green task in a NEW directory, or leave it ready for the selected client."""
 import argparse
 import json
 from pathlib import Path
@@ -22,6 +22,7 @@ def cli(program, root, *args, expected=0):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--project", required=True, type=Path)
+    parser.add_argument("--client", choices=("codex", "claude", "both"), default="codex")
     parser.add_argument("--leave-broken", action="store_true")
     args = parser.parse_args()
     root = args.project.resolve()
@@ -29,7 +30,7 @@ def main():
         parser.error("Choose a new directory. Existing directories are preserved.")
     shutil.copytree(HERE / "clock", root, ignore=shutil.ignore_patterns("__pycache__"))
     # Source entrypoint imports its sibling package; isolated mode is for the installed zipapp.
-    subprocess.run([sys.executable, str(SOURCE / "harness.py"), "install", "--project", str(root)],
+    subprocess.run([sys.executable, str(SOURCE / "harness.py"), "install", "--client", args.client, "--project", str(root)],
                    check=True, stdout=subprocess.DEVNULL)
     tool = root / ".quality" / "quality.pyz"
     cfg = root / ".quality" / "policy.json"
@@ -51,7 +52,7 @@ def main():
     shutil.copyfile(folder / "evidence.json", folder / "baseline-failure.json")
     print("Broken formatter: " + ", ".join(c["id"] + "=" + c["status"] for c in red["criteria"]))
     if args.leave_broken:
-        print(f"Prepared {root}. Open Codex here and ask it to finish the sealed clock-label task.")
+        print(f"Prepared {root}. Open the selected client here and ask it to finish the sealed clock-label task.")
         return
     shutil.copyfile(HERE / "solution/clock_label.py", root / "clock_label.py")
     green = cli(tool, root, "verify", task)

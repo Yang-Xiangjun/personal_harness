@@ -11,7 +11,7 @@ from .verify import verify
 
 
 def parser():
-    cli = argparse.ArgumentParser(description="Personal quality harness for Codex CLI")
+    cli = argparse.ArgumentParser(description="Personal quality harness for Codex CLI and Claude Code")
     cmds = cli.add_subparsers(dest="command", required=True)
 
     def add(name, help_text, task=False):
@@ -22,7 +22,9 @@ def parser():
         return sub
 
     ins = add("install", "install or preview a create-only project integration from the source checkout")
-    ins.add_argument("--user-skills", action="store_true", help="install skills under ~/.agents/skills")
+    ins.add_argument("--client", choices=("codex", "claude", "both"), default="codex",
+                     help="install Codex CLI, Claude Code, or both adapters (default: codex)")
+    ins.add_argument("--user-skills", action="store_true", help="install skills in the selected client's personal skills directory")
     ins.add_argument("--hook", action="store_true", help="probe for an optional project Stop hook")
     ins.add_argument("--dry-run", action="store_true", help="report destinations without writing")
     new = add("new", "create a task contract and route-specific drafts", True)
@@ -40,9 +42,9 @@ def parser():
     ver = add("verify", "run checks now and write a fresh evidence.json", True)
     ver.add_argument("--include-output", action="store_true", help="include the last 2048 command-output bytes")
     watch = add("watch", "bind an existing task to the optional Stop reminder for this session", True)
-    watch.add_argument("--session", default=os.environ.get("CODEX_THREAD_ID"))
+    watch.add_argument("--session", help="session ID (default: current client session)")
     off = add("unwatch", "detach the session's Stop reminder")
-    off.add_argument("--session", default=os.environ.get("CODEX_THREAD_ID"))
+    off.add_argument("--session", help="session ID (default: current client session)")
     return cli
 
 
@@ -51,7 +53,7 @@ def run(args):
     require(root.is_dir(), "Project must be a directory.")
     if args.command == "install":
         from .install import install
-        return install(root, args.user_skills, args.hook, args.dry_run), 0
+        return install(root, args.user_skills, args.hook, args.dry_run, client=args.client), 0
     require(local(root, ".quality").is_dir(), "Install the project integration first.")
     task = Task(root, args.task) if hasattr(args, "task") else None
     with lock(root):
@@ -59,8 +61,13 @@ def run(args):
             r = verify(task, args.include_output)
             return r, 0 if r["status"] == "pass" else 1
         if args.command in ("watch", "unwatch"):
-            require(words(args.session), "Supply --session with the Codex session ID.")
-            key = digest(args.session.encode())
+            session = args.session
+            if session is None:
+                ids = {os.environ.get(var) for var in ("CODEX_THREAD_ID", "CLAUDE_CODE_SESSION_ID")} - {None, ""}
+                require(len(ids) == 1, "Supply --session ID when the client session is absent or ambiguous.")
+                session = ids.pop()
+            require(words(session), "Supply --session with the active client session ID.")
+            key = digest(session.encode())
             path = local(root, f".quality/sessions/{key}.json")
             if args.command == "unwatch":
                 path.unlink(missing_ok=True)

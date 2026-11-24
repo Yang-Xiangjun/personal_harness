@@ -10,8 +10,18 @@ Open the target as a trusted project, start a fresh Codex CLI session and inspec
 
 Opt in for a particular Codex session by running `python -I .quality/quality.pyz watch TASK` from it. This uses `CODEX_THREAD_ID` when present. Supply `--session ID` if needed. The marker contains the task ID and is keyed by a hash of the session ID. Use `unwatch` to detach. Other sessions are unaffected.
 
-The handler reads a JSON event from stdin and returns JSON on stdout with exit code 0. On the first Stop for a watched task with missing or nonpassing evidence it requests one continuation through `decision: "block"` and a reason. On an already continued turn (`stop_hook_active`) it returns an empty object. Unsupported events and unwatched sessions pass through. Invalid state or payload yields a fail-open warning. It reads only bounded local records and never runs project test code. A saved pass can be stale. The reminder checks the recorded status only. Run `verify` for a completion decision. [Native hook discovery, trust and Stop semantics](https://developers.openai.com/codex/hooks)
+The handler reads JSON from stdin and writes JSON to stdout with exit code 0. Codex uses the `reason` in a `decision: "block"` response as a continuation prompt. The handler builds that prompt from fixed wording and the validated task ID. Free-form issues, test output and transcript content stay out of the prompt. [Native Stop semantics](https://developers.openai.com/codex/hooks)
+
+| Recorded evidence on the first Stop for a watched task | Hook response |
+| --- | --- |
+| Missing report | Requests a continuation to run `verify TASK` when ready or report the outstanding work. |
+| `running` | Requests a continuation to check whether the verification process is active. An interrupted run can be repeated once the project is idle. |
+| `fail` | Points to the task's `evidence.json` so the agent can inspect failed criteria or integrity issues, repair within scope or report a blocker. |
+| `pass` | Returns an empty object. Run fresh verification after subsequent edits. |
+| Unreadable JSON, wrong task ID, or an unrecognized status | Returns a fail-open `systemMessage` and leaves the completion decision to explicit verification. |
+
+Unwatched sessions, other events and a repeated Stop with `stop_hook_active` pass through. The handler reads bounded local records. Only an explicit `verify` invocation executes the registered project checks.
 
 ## Other adapters
 
-The source-specific pieces are `adapters/codex/`, skill installation destinations and the hook installer. The task directory, JSON policy and evidence, Python checks, and portable playbooks can be reused by another client. Codex CLI is the implemented integration.
+Codex and Claude Code share the Stop handler, task directory, policy, evidence and Python checks. Use `install --client both` to expose this workflow in both clients. The existing `adapters/codex/stop.py` entry point delegates to `adapters/stop.py`. [Claude Code adapter](claude.md)

@@ -332,10 +332,29 @@ class ProjectTests(unittest.TestCase):
                  "stop_hook_active": False}
         self.assertEqual(invoke(event), {})
         self.call("watch", "example", "--session", "abc")
-        self.assertEqual(invoke(event)["decision"], "block")
+        missing = invoke(event)
+        self.assertEqual(missing["decision"], "block")
+        self.assertIn("verify example", missing["reason"])
         self.assertEqual(invoke(dict(event, cwd=self.temp.name)), {})
         self.assertEqual(invoke(dict(event, session_id="other")), {})
         self.assertEqual(invoke(dict(event, stop_hook_active=True)), {})
+        report_path = self.folder / "evidence.json"
+        write(report_path, {"task": "example", "status": "running"})
+        running = invoke(event)
+        self.assertEqual(running["decision"], "block")
+        self.assertIn("in progress", running["reason"])
+        # A continuation is a model prompt. Keep free-form report content out of it.
+        detail = "arbitrary text from a failing test"
+        write(report_path, {"task": "example", "status": "fail", "issues": [detail]})
+        failed = invoke(event)
+        self.assertEqual(failed["decision"], "block")
+        self.assertIn("evidence.json", failed["reason"])
+        self.assertNotIn(detail, failed["reason"])
+        for task_name, status in (("other", "pass"), ("example", "unknown")):
+            write(report_path, {"task": task_name, "status": status})
+            response = invoke(event)
+            self.assertNotIn("decision", response)
+            self.assertIn("fail-open", response["systemMessage"])
         self.call("seal", "example")
         self.check()
         self.assertEqual(invoke(event), {})
@@ -364,6 +383,136 @@ class ProjectTests(unittest.TestCase):
         self.call("seal", "example", code=1)
         self.assertFalse((self.folder / "seal.json").exists())
         self.assertEqual((self.q / "busy.lock").read_bytes(), b"pid=fixture")
+
+    def test_claude_only_install_and_preview(self):
+        self.root = Path(self.temp.name) / "Claude's project"
+        self.root.mkdir()
+        self.call("install", "--client", "claude", "--dry-run")
+        self.assertEqual(list(self.root.iterdir()), [])
+        self.call("install", "--client", "claude")
+        self.assertEqual((self.root / "CLAUDE.md").read_text(), "@.quality/CLAUDE.md\n")
+        guide = (self.root / ".quality/CLAUDE.md").read_text(encoding="utf-8")
+        self.assertIn(Path(sys.executable).as_posix(), guide)
+        self.assertFalse((self.root / "AGENTS.md").exists())
+        self.assertFalse((self.root / ".agents").exists())
+        self.assertFalse((self.root / ".quality/CODEX.md").exists())
+        skills = list((self.root / ".claude/skills").glob("*/SKILL.md"))
+        self.assertEqual(len(skills), 7)
+        for skill in skills:
+            self.assertEqual(skill.read_bytes(), (SOURCE / "skills" / skill.parent.name / "SKILL.md").read_bytes())
+        self.assertEqual(self.call("install", "--client", "claude")["created"], [])
+
+    def test_both_clients_verify_the_same_sealed_task(self):
+        self.assertFalse((self.root / ".claude").exists())
+        self.make()
+        self.call("seal", "example")
+        baseline = self.check()
+        self.call("install", "--client", "both")
+        proc = subprocess.run([sys.executable, "-I", str(self.q / "quality.pyz"), "verify", "example"],
+                              cwd=self.root, capture_output=True, text=True, check=True)
+        report = json.loads(proc.stdout)
+        self.assertEqual(report["seal_sha256"], baseline["seal_sha256"])
+        self.assertNotEqual(report["run_id"], baseline["run_id"])
+        self.assertEqual(report["status"], "pass")
+        (self.root / "label.txt").write_bytes(b"wrong")
+        self.assertEqual(self.check(1)["criteria"][0]["status"], "fail")
+        self.assertEqual(self.call("install", "--client", "both")["created"], [])
+
+    def test_claude_metadata_cannot_be_used_as_acceptance_evidence(self):
+        self.make()
+        self.c["criteria"][0]["check"]["path"] = ".claude/settings.json"
+        write(self.folder / "contract.json", self.c)
+        self.call("plan-check", "example", code=1)
+
+    def test_claude_install_preserves_owner_instructions_settings_and_skill_edits(self):
+        owner = self.root / "CLAUDE.md"
+        owner.write_bytes(b"Team instructions\r\n")
+        shared = self.root / ".claude/settings.json"
+        personal = shared.with_name("settings.local.json")
+        write(shared, {"language": "french"})
+        write(personal, {"hooks": {"SessionStart": []}})
+        before = [p.read_bytes() for p in (owner, shared, personal)]
+        with patch("quality.install.hook_available", return_value=True):
+            result = self.call("install", "--client", "claude", "--hook")
+        self.assertEqual(before, [p.read_bytes() for p in (owner, shared, personal)])
+        self.assertTrue(any("@.quality/CLAUDE.md" in note for note in result["notes"]))
+        self.assertIn("Stop", json.loads((self.q / "claude-stop-hook.fragment.json").read_bytes())["hooks"])
+        skill = self.root / ".claude/skills/task-router/SKILL.md"
+        skill.write_bytes(b"Team skill")
+        missing = self.root / ".agents/skills/task-router/SKILL.md"
+        missing.unlink()
+        self.call("install", "--client", "both", code=1)
+        self.assertEqual(skill.read_bytes(), b"Team skill")
+        self.assertFalse(missing.exists())
+
+    def test_claude_personal_skills_use_selected_profile(self):
+        for custom in (False, True):
+            with self.subTest(custom=custom):
+                home = Path(self.temp.name).resolve() / f"account-{custom}"
+                profile = home / ("custom profile" if custom else ".claude")
+                with patch("quality.install.Path.home", return_value=home), patch.dict(
+                    os.environ, {"CLAUDE_CONFIG_DIR": str(profile) if custom else ""}
+                ):
+                    self.call("install", "--client", "claude", "--user-skills")
+                    self.assertEqual(len(list((profile / "skills").glob("*/SKILL.md"))), 7)
+                    self.assertFalse((self.root / ".claude/skills").exists())
+                    self.assertFalse((profile / "settings.json").exists())
+
+    def test_claude_keeps_project_instructions_visible(self):
+        project_guide = self.root / "AGENTS.md"
+        project_guide.write_bytes(b"Team instructions\n")
+        hidden = self.root / ".claude"
+        hidden.mkdir()
+        (hidden / "AGENTS.md").write_bytes(b"More team instructions\n")
+        claude_guide = hidden / "CLAUDE.md"
+        claude_guide.write_bytes(b"Claude team instructions\n")
+        result = self.call("install", "--client", "both")
+        self.assertFalse((self.root / "CLAUDE.md").exists())
+        self.assertEqual(claude_guide.read_bytes(), b"Claude team instructions\n")
+        self.assertTrue(any("@../.quality/CLAUDE.md" in note for note in result["notes"]))
+        claude_guide.unlink()
+        self.call("install", "--client", "both")
+        self.assertEqual((self.root / "CLAUDE.md").read_text().splitlines(),
+                         ["@AGENTS.md", "@.claude/AGENTS.md", "@.quality/CLAUDE.md"])
+        self.assertEqual(project_guide.read_bytes(), b"Team instructions\n")
+        self.assertEqual(self.call("install", "--client", "both")["created"], [])
+
+    def test_claude_stop_uses_session_id_and_native_shell(self):
+        self.make()
+        with patch.dict(os.environ, {"CLAUDE_CODE_SESSION_ID": "claude-fixture", "CODEX_THREAD_ID": ""}):
+            self.call("watch", "example")
+        with patch("quality.install.hook_available", return_value=True):
+            self.call("install", "--client", "claude", "--hook")
+        path = self.root / ".claude/settings.local.json"
+        handler = json.loads(path.read_bytes())["hooks"]["Stop"][0]["hooks"][0]
+        self.assertNotIn("commandWindows", handler)
+        if os.name == "nt":
+            self.assertEqual(handler["shell"], "powershell")
+            shell = ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command"]
+        else:
+            shell = ["/bin/sh", "-c"]
+        event = {"hook_event_name": "Stop", "session_id": "claude-fixture", "cwd": str(self.root),
+                 "stop_hook_active": False}
+        def invoke():
+            proc = subprocess.run([*shell, handler["command"]], cwd=self.root, input=json.dumps(event),
+                                  capture_output=True, text=True, check=True)
+            return json.loads(proc.stdout)
+
+        self.assertEqual(invoke()["decision"], "block")
+        event["stop_hook_active"] = True
+        self.assertEqual(invoke(), {})
+        event["stop_hook_active"] = False
+        with patch.dict(os.environ, {"CLAUDE_CODE_SESSION_ID": "claude-fixture", "CODEX_THREAD_ID": "outer"}):
+            self.call("unwatch", code=1)
+            self.call("unwatch", "--session", "claude-fixture")
+        self.assertEqual(invoke(), {})
+
+    def test_unsupported_claude_hook_leaves_codex_available(self):
+        with patch("quality.install.hook_available", side_effect=lambda client: client == "codex"):
+            result = self.call("install", "--client", "both", "--hook")
+        self.assertTrue(any("FAIL-OPEN (claude)" in note for note in result["notes"]))
+        self.assertTrue((self.root / ".codex/hooks.json").is_file())
+        self.assertFalse((self.root / ".claude/settings.local.json").exists())
 
     def test_installed_entrypoint_is_independent_of_source_cwd(self):
         self.assertIn(sys.executable, (self.q / "CODEX.md").read_text(encoding="utf-8"))

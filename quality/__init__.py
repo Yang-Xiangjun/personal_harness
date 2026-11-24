@@ -1,1 +1,1 @@
-"""Local quality checks for Codex CLI."""
+"""Local quality checks for Codex CLI and Claude Code."""

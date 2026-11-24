@@ -94,7 +94,7 @@ def local(root, relative):
 
 def artifact(root, relative):
     path = local(root, relative)
-    require(relative.split("/")[0].lower() not in (".quality", ".git", ".codex", ".agents"),
+    require(relative.split("/")[0].lower() not in (".quality", ".git", ".codex", ".agents", ".claude"),
             "Deliverables and check inputs must be outside harness and agent metadata.")
     return path
 
